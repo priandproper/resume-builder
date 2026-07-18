@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from 'react'
 import type {
   Resume,
   ExperienceItem,
@@ -8,6 +9,7 @@ import type {
 import { EditableText } from './EditableText'
 import { EditableLink } from './EditableLink'
 import { BulletList } from './BulletList'
+import { fitResume } from '../lib/fit'
 
 /**
  * THE EDITABLE DOCUMENT.
@@ -90,6 +92,12 @@ export function ResumeDocument({
   resume: Resume
   onChange: (next: Resume) => void
 }) {
+  const sheetRef = useRef<HTMLElement>(null)
+  // Re-fit to one page whenever the resume content changes (after each commit).
+  useLayoutEffect(() => {
+    if (sheetRef.current) fitResume(sheetRef.current)
+  }, [resume])
+
   const set = (patch: Partial<Resume>) => onChange({ ...resume, ...patch })
   const setContact = (patch: Partial<Resume['contact']>) =>
     set({ contact: { ...resume.contact, ...patch } })
@@ -110,7 +118,7 @@ export function ResumeDocument({
   const noSkills = resume.skills.length === 0
 
   return (
-    <article className="resume-sheet" id="resume-print-root">
+    <article className="resume-sheet" id="resume-print-root" ref={sheetRef}>
       {/* ---------- Header ---------- */}
       <header className="rt-header">
         <EditableText

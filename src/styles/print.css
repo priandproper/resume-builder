@@ -40,12 +40,11 @@
 
   .resume-sheet {
     box-shadow: none !important;
-    /* --print-scale is set by handlePrint() to shrink-to-fit one page. `zoom`
-       (unlike transform) reduces the actual layout height, so pagination sees
-       the smaller size and keeps everything on a single page. Width is
-       compensated so the sheet still fills the page at any scale. */
-    zoom: var(--print-scale, 1);
-    width: calc(100% / var(--print-scale, 1)) !important;
+    /* One-page fit is handled by the adaptive base font (--rt-font), computed on
+       screen so what you see is what prints. Here we just drop the page chrome;
+       @page's 0.4in margin matches the sheet's on-screen padding, so the content
+       width (and therefore the fit) is identical on screen and on paper. */
+    width: 100% !important;
     min-height: auto !important;
     padding: 0 !important;
     margin: 0 !important;

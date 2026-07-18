@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 
 /**
  * A contact link that DISPLAYS a short label ("LinkedIn") but LINKS to the full
@@ -20,7 +20,8 @@ export function EditableLink({
   const ref = useRef<HTMLAnchorElement | null>(null)
 
   // When not being edited, show the label (or nothing when there's no URL).
-  useEffect(() => {
+  // useLayoutEffect so text is present before the parent measures for one-page fit.
+  useLayoutEffect(() => {
     const el = ref.current
     if (!el || document.activeElement === el) return
     const shown = url ? label : ''

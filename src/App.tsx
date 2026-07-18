@@ -11,6 +11,7 @@ import {
 import { blankResume } from './lib/normalize'
 import { ingestResume, ingestFromUrl, listenForPostMessage } from './lib/ingest'
 import { seedIfEmpty } from './lib/seed'
+import { fitResume } from './lib/fit'
 import { ResumeDocument } from './components/ResumeDocument'
 import { LibraryDrawer } from './components/LibraryDrawer'
 
@@ -139,33 +140,11 @@ export default function App() {
   }
 
   const handlePrint = () => {
-    // Measure the real printable content and shrink-to-fit a single page by
-    // setting --print-scale (consumed by print.css via `zoom`). We measure with
-    // the `measuring` class on, which hides the same things print hides (edit
-    // controls, empty sections) so the height reflects the actual PDF.
+    // Re-fit to one page (the adaptive base font is set on the sheet and is
+    // inherited into print), then hand off to the browser's PDF export.
     const sheet = document.getElementById('resume-print-root')
-    const root = document.documentElement
-    let scale = 1
-    if (sheet) {
-      const header = sheet.querySelector('.rt-header')
-      document.body.classList.add('measuring')
-      const sections = Array.from(sheet.querySelectorAll('.rt-section')).filter(
-        (s) => (s as HTMLElement).offsetHeight > 0,
-      )
-      if (header && sections.length) {
-        const top = header.getBoundingClientRect().top
-        const bottom = sections[sections.length - 1].getBoundingClientRect().bottom
-        const contentPx = bottom - top
-        // Letter minus 0.4in margins = 10.2in of printable height; 2% safety.
-        const pageAvailPx = (11 - 0.8) * 96 * 0.98
-        scale = Math.max(0.5, Math.min(1, pageAvailPx / contentPx))
-      }
-      document.body.classList.remove('measuring')
-    }
-    root.style.setProperty('--print-scale', String(scale))
+    if (sheet) fitResume(sheet)
     window.print()
-    // Reset so the on-screen view is never left scaled.
-    window.setTimeout(() => root.style.setProperty('--print-scale', '1'), 400)
   }
 
   return (
@@ -228,7 +207,7 @@ export default function App() {
 
         <div className="doc-canvas">
           {selected ? (
-            <ResumeDocument resume={selected} onChange={handleEditorChange} />
+            <ResumeDocument key={selected.id} resume={selected} onChange={handleEditorChange} />
           ) : (
             <div className="empty-state no-print">Create or import a resume to begin.</div>
           )}

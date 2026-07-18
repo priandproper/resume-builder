@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 
 type Tag = 'span' | 'div' | 'p' | 'h1'
 
@@ -32,7 +32,9 @@ export function EditableText({
   const ref = useRef<HTMLElement | null>(null)
 
   // Sync DOM text from `value` only when the element is NOT being edited.
-  useEffect(() => {
+  // useLayoutEffect (not useEffect) so the text is in the DOM before the parent
+  // measures the resume to fit one page (child layout effects run first).
+  useLayoutEffect(() => {
     const el = ref.current
     if (!el || document.activeElement === el) return
     const current = multiline ? el.innerText : el.textContent ?? ''

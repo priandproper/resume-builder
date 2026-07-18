@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 let counter = 0
 const uid = () => `b${++counter}`
@@ -32,7 +32,7 @@ export function BulletList({
   // Resync from props only on genuine EXTERNAL changes (resume switch, import),
   // comparing by non-empty content so our own transient empty bullet (added on
   // Enter, before you've typed) never triggers a rebuild that would drop it.
-  useEffect(() => {
+  useLayoutEffect(() => {
     const rowsContent = rows.map((r) => r.text).filter((t) => t.trim() !== '')
     const itemsContent = items.filter((t) => t.trim() !== '')
     const same =
@@ -136,7 +136,9 @@ function EditableBullet({
 }) {
   const ref = useRef<HTMLLIElement>(null)
 
-  useEffect(() => {
+  // useLayoutEffect so bullet text is in the DOM before the parent measures for
+  // one-page fit (child layout effects run before the parent's).
+  useLayoutEffect(() => {
     const el = ref.current
     if (!el || document.activeElement === el) return
     if (el.innerText !== text) el.textContent = text
