@@ -23,9 +23,8 @@
 /* ---- Header ---- */
 .rt-header {
   text-align: center;
-  padding-bottom: 10px;
+  padding-bottom: 4px;
   margin-bottom: 14px;
-  border-bottom: 1.5px solid var(--ink);
 }
 
 .rt-name {

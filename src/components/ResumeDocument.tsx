@@ -106,13 +106,6 @@ export function ResumeDocument({
           onChange={(v) => setContact({ fullName: v })}
           ariaLabel="Full name"
         />
-        <EditableText
-          as="div"
-          className="rt-headline"
-          value={resume.contact.headline ?? ''}
-          placeholder="Headline (e.g. Senior Software Engineer)"
-          onChange={(v) => setContact({ headline: v })}
-        />
         <div className="rt-contact">
           {CONTACT_FIELDS.map((f) => (
             <span
