@@ -139,6 +139,17 @@ body {
   flex-shrink: 0;
 }
 
+/* Transient state used by handlePrint() to measure true printable height:
+   hide exactly what print hides so the measurement matches the PDF. */
+.measuring .doc-ctrl,
+.measuring .doc-entry-ctrls,
+.measuring .doc-add,
+.measuring .doc-add-entry,
+.measuring .rt-section.is-empty,
+.measuring .rt-bullets li.is-empty {
+  display: none !important;
+}
+
 /* ---------- Document canvas (the editable resume) ---------- */
 .doc-canvas {
   flex: 1;
