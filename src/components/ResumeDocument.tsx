@@ -6,6 +6,7 @@ import type {
   SkillGroup,
 } from '../types/resume'
 import { EditableText } from './EditableText'
+import { EditableLink } from './EditableLink'
 import { BulletList } from './BulletList'
 
 /**
@@ -26,13 +27,17 @@ const CONTACT_FIELDS: { key: keyof Resume['contact']; placeholder: string }[] = 
   { key: 'github', placeholder: 'GitHub' },
 ]
 
-/** Build a clickable href for a contact field (empty ⇒ no link, stays plain text). */
+/** Contact fields rendered as short labelled links (display a label, link to the URL). */
+const LINK_LABELS: Partial<Record<keyof Resume['contact'], string>> = {
+  website: 'Website',
+  linkedin: 'LinkedIn',
+  github: 'GitHub',
+}
+
+/** Build a clickable href for the email field (others handled by EditableLink). */
 function contactHref(key: keyof Resume['contact'], value: string): string | undefined {
   if (!value) return undefined
   if (key === 'email') return `mailto:${value}`
-  if (key === 'website' || key === 'linkedin' || key === 'github') {
-    return /^https?:\/\//i.test(value) ? value : `https://${value}`
-  }
   return undefined
 }
 
@@ -119,14 +124,24 @@ export function ResumeDocument({
         <div className="rt-contact">
           {CONTACT_FIELDS.map((f) => {
             const value = resume.contact[f.key] ?? ''
+            const linkLabel = LINK_LABELS[f.key]
             return (
               <span className={`rt-contact-item ${value ? '' : 'is-empty'}`} key={f.key}>
-                <EditableText
-                  value={value}
-                  placeholder={f.placeholder}
-                  href={contactHref(f.key, value)}
-                  onChange={(v) => setContact({ [f.key]: v })}
-                />
+                {linkLabel ? (
+                  <EditableLink
+                    url={value}
+                    label={linkLabel}
+                    placeholder={f.placeholder}
+                    onChange={(v) => setContact({ [f.key]: v })}
+                  />
+                ) : (
+                  <EditableText
+                    value={value}
+                    placeholder={f.placeholder}
+                    href={contactHref(f.key, value)}
+                    onChange={(v) => setContact({ [f.key]: v })}
+                  />
+                )}
               </span>
             )
           })}

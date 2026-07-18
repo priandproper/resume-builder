@@ -275,15 +275,17 @@ button {
   content: '';
 }
 
-/* Contact line: dot separators between adjacent non-empty items only. */
+/* Contact line: a clear bullet separator between adjacent non-empty items. */
 .rt-contact-item.is-empty {
   margin: 0 5px;
 }
 
 .rt-contact-item:not(.is-empty) ~ .rt-contact-item:not(.is-empty)::before {
-  content: '·';
-  margin: 0 7px;
-  color: var(--rule);
+  content: '•';
+  margin: 0 9px;
+  color: #9aa1ad;
+  font-size: 0.85em;
+  vertical-align: middle;
 }
 
 .rt-dash {
