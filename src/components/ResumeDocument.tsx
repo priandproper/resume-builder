@@ -26,6 +26,16 @@ const CONTACT_FIELDS: { key: keyof Resume['contact']; placeholder: string }[] = 
   { key: 'github', placeholder: 'GitHub' },
 ]
 
+/** Build a clickable href for a contact field (empty ⇒ no link, stays plain text). */
+function contactHref(key: keyof Resume['contact'], value: string): string | undefined {
+  if (!value) return undefined
+  if (key === 'email') return `mailto:${value}`
+  if (key === 'website' || key === 'linkedin' || key === 'github') {
+    return /^https?:\/\//i.test(value) ? value : `https://${value}`
+  }
+  return undefined
+}
+
 function move<T>(arr: T[], from: number, to: number): T[] {
   if (to < 0 || to >= arr.length) return arr
   const next = arr.slice()
@@ -107,18 +117,19 @@ export function ResumeDocument({
           ariaLabel="Full name"
         />
         <div className="rt-contact">
-          {CONTACT_FIELDS.map((f) => (
-            <span
-              className={`rt-contact-item ${resume.contact[f.key] ? '' : 'is-empty'}`}
-              key={f.key}
-            >
-              <EditableText
-                value={resume.contact[f.key] ?? ''}
-                placeholder={f.placeholder}
-                onChange={(v) => setContact({ [f.key]: v })}
-              />
-            </span>
-          ))}
+          {CONTACT_FIELDS.map((f) => {
+            const value = resume.contact[f.key] ?? ''
+            return (
+              <span className={`rt-contact-item ${value ? '' : 'is-empty'}`} key={f.key}>
+                <EditableText
+                  value={value}
+                  placeholder={f.placeholder}
+                  href={contactHref(f.key, value)}
+                  onChange={(v) => setContact({ [f.key]: v })}
+                />
+              </span>
+            )
+          })}
         </div>
       </header>
 

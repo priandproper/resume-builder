@@ -45,15 +45,30 @@
   font-size: 9.5pt;
   color: var(--ink-soft);
   font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  /* Wrap gracefully onto multiple centered lines instead of overflowing. */
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+  row-gap: 3px;
 }
 
 .rt-contact-item {
   white-space: nowrap;
 }
 
-.rt-contact a {
+.rt-contact a,
+.rt-contact .editable-link {
   color: var(--ink-soft);
   text-decoration: none;
+  cursor: pointer;
+}
+
+/* Links get a subtle underline so they read as clickable. */
+.rt-contact .editable-link:not(.is-empty) {
+  text-decoration: underline;
+  text-decoration-color: var(--rule);
+  text-underline-offset: 2px;
 }
 
 .rt-dot {

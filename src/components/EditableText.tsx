@@ -15,6 +15,7 @@ export function EditableText({
   as = 'span',
   multiline = false,
   ariaLabel,
+  href,
 }: {
   value: string
   onChange: (v: string) => void
@@ -23,6 +24,10 @@ export function EditableText({
   as?: Tag
   multiline?: boolean
   ariaLabel?: string
+  /** When set, render as a clickable <a> (still inline-editable). The href
+   *  survives into the printed PDF as a real link; clicks are suppressed while
+   *  editing so they place the caret instead of navigating away. */
+  href?: string
 }) {
   const ref = useRef<HTMLElement | null>(null)
 
@@ -42,20 +47,22 @@ export function EditableText({
     if (cleaned !== value) onChange(cleaned)
   }
 
-  // Rendered tag varies (h1/div/p/span); a loose type here is fine at runtime.
+  const isLink = !!href
+  // Rendered tag varies (a/h1/div/p/span); a loose type here is fine at runtime.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const Tag: any = as
+  const Tag: any = isLink ? 'a' : as
 
   return (
     <Tag
       ref={ref}
-      className={`editable ${multiline ? 'editable-multiline' : ''} ${value ? '' : 'is-empty'} ${className}`}
+      className={`editable ${isLink ? 'editable-link' : ''} ${multiline ? 'editable-multiline' : ''} ${value ? '' : 'is-empty'} ${className}`}
       contentEditable
       suppressContentEditableWarning
       data-placeholder={placeholder}
       role="textbox"
       aria-label={ariaLabel ?? placeholder}
       spellCheck
+      {...(isLink ? { href, onClick: (e: React.MouseEvent) => e.preventDefault() } : {})}
       onBlur={commit}
       onKeyDown={(e: React.KeyboardEvent<HTMLElement>) => {
         // Single-line fields: Enter confirms and blurs instead of inserting a newline.
