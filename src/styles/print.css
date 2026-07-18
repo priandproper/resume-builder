@@ -1,0 +1,72 @@
+/**
+ * Print scoping. When the user hits "Download PDF" we call window.print().
+ * These rules hide all app chrome AND all editing affordances, printing ONLY
+ * the resume content at true Letter size — selectable, ATS-readable text that
+ * matches what's on screen (minus the editing controls and empty placeholders).
+ */
+@media print {
+  @page {
+    size: letter;
+    margin: 0.5in;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    height: auto !important;
+  }
+
+  /* Hide app chrome and every editing-only control. */
+  .no-print,
+  .doc-ctrl,
+  .doc-entry-ctrls,
+  .doc-add,
+  .doc-add-entry {
+    display: none !important;
+  }
+
+  .app,
+  .workspace,
+  .doc-canvas {
+    display: block !important;
+    overflow: visible !important;
+    height: auto !important;
+    width: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    background: #fff !important;
+  }
+
+  .resume-sheet {
+    box-shadow: none !important;
+    width: 100% !important;
+    min-height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Editable fields print as plain text — no hover/focus backgrounds. */
+  .editable {
+    background: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+
+  /* Empty fields, sections, and their placeholders don't print. */
+  .editable.is-empty::before {
+    content: '' !important;
+  }
+
+  .rt-section.is-empty,
+  .rt-contact-item.is-empty,
+  .rt-bullets li.is-empty {
+    display: none !important;
+  }
+
+  /* Keep entries from splitting awkwardly across pages. */
+  .rt-entry,
+  .rt-section {
+    break-inside: avoid;
+  }
+}

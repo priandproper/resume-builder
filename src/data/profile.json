@@ -1,0 +1,17 @@
+{
+  "_comment": "Intentionally EMPTY. No personal data ships in this public codebase. Real resumes live only on the user's own devices (encrypted localStorage) and in their encrypted iCloud backup, loaded via Import. See src/lib/backup.ts.",
+  "contact": {
+    "fullName": "",
+    "headline": "",
+    "email": "",
+    "phone": "",
+    "location": "",
+    "linkedin": "",
+    "github": ""
+  },
+  "education": [],
+  "experiences": [],
+  "summaries": [],
+  "skillSets": [],
+  "prebuilt": []
+}

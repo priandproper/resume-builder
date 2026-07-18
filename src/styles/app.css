@@ -1,0 +1,618 @@
+:root {
+  --bg: #f3f4f6;
+  --panel: #ffffff;
+  --border: #e5e7eb;
+  --text: #111827;
+  --muted: #6b7280;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --danger: #dc2626;
+  --sidebar-w: 260px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.app {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ---------- Sidebar ---------- */
+.sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.resume-list {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.resume-list-item {
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.resume-list-item:hover {
+  background: #f9fafb;
+}
+
+.resume-list-item.active {
+  background: #eff6ff;
+  outline: 1px solid #bfdbfe;
+}
+
+.rli-label {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rli-name {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.resume-list-empty {
+  padding: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.sidebar-foot {
+  padding: 12px;
+  border-top: 1px solid var(--border);
+}
+
+/* ---------- Workspace ---------- */
+.workspace {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+
+.toolbar-title {
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ---------- Document canvas (the editable resume) ---------- */
+.doc-canvas {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--bg);
+  padding: 32px 24px 64px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.empty-state {
+  color: var(--muted);
+  font-size: 14px;
+  margin-top: 80px;
+}
+
+/* ---------- Buttons ---------- */
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.primary-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.primary-btn:hover {
+  background: var(--accent-hover);
+}
+
+.ghost-btn {
+  background: #fff;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  width: 100%;
+}
+
+.ghost-btn:hover {
+  background: #f9fafb;
+}
+
+.toolbar-actions .ghost-btn {
+  width: auto;
+}
+
+.ghost-btn.danger {
+  color: var(--danger);
+  border-color: #fecaca;
+}
+
+.ghost-btn.danger:hover {
+  background: #fef2f2;
+}
+
+.add-btn {
+  background: #eff6ff;
+  color: var(--accent);
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.add-btn:hover {
+  background: #dbeafe;
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 13px;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.icon-btn:hover {
+  background: #f3f4f6;
+  color: var(--text);
+}
+
+.icon-btn.danger:hover {
+  color: var(--danger);
+  background: #fef2f2;
+}
+
+/* ---------- Inline document editing ---------- */
+/* Every editable leaf: no default outline, subtle hover + focus affordance so
+   it reads as "click here to type" without looking like a form field. */
+.editable {
+  outline: none;
+  border-radius: 3px;
+  cursor: text;
+  transition: background-color 0.1s ease, box-shadow 0.1s ease;
+  min-width: 1px;
+}
+
+.editable:hover {
+  background: rgba(37, 99, 235, 0.05);
+}
+
+.editable:focus {
+  background: rgba(37, 99, 235, 0.08);
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.35);
+}
+
+.editable-multiline {
+  white-space: pre-wrap;
+  display: block;
+}
+
+/* Placeholder shown for empty fields (hidden once focused or filled). */
+.editable.is-empty::before {
+  content: attr(data-placeholder);
+  color: #b6bac2;
+  font-style: italic;
+  pointer-events: none;
+}
+
+.editable.is-empty:focus::before {
+  content: '';
+}
+
+/* Contact line: dot separators between adjacent non-empty items only. */
+.rt-contact-item.is-empty {
+  margin: 0 5px;
+}
+
+.rt-contact-item:not(.is-empty) ~ .rt-contact-item:not(.is-empty)::before {
+  content: '·';
+  margin: 0 7px;
+  color: var(--rule);
+}
+
+.rt-dash {
+  color: var(--ink-soft);
+}
+
+/* Per-entry hover controls (move/remove): a clean floating pill in the left
+   margin, revealed on hover. */
+.doc-entry {
+  position: relative;
+}
+
+.doc-entry-ctrls {
+  position: absolute;
+  left: -2.6em;
+  top: -2px;
+  display: flex;
+  flex-direction: column;
+  padding: 2px;
+  gap: 1px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(17, 24, 39, 0.08);
+  opacity: 0;
+  transform: translateX(4px);
+  transition: opacity 0.12s ease, transform 0.12s ease;
+  pointer-events: none;
+}
+
+.doc-entry:hover .doc-entry-ctrls,
+.doc-entry-ctrls:hover {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.doc-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #9aa1ad;
+  border-radius: 5px;
+  transition: background-color 0.1s ease, color 0.1s ease;
+}
+
+.doc-icon:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: var(--text);
+}
+
+.doc-icon:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.doc-icon.danger:hover:not(:disabled) {
+  color: var(--danger);
+  background: #fef2f2;
+}
+
+/* "+ add" affordances (bullets, entries, groups). Subtle until hovered. */
+.doc-add,
+.doc-add-entry {
+  font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  color: var(--accent);
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  opacity: 0.5;
+  transition: opacity 0.1s ease, background-color 0.1s ease;
+}
+
+.doc-add {
+  font-size: 11px;
+  padding: 1px 6px;
+  margin-top: 2px;
+}
+
+.doc-add-entry {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 8px;
+  margin-top: 6px;
+}
+
+.doc-add:hover,
+.doc-add-entry:hover {
+  opacity: 1;
+  background: #eff6ff;
+}
+
+.ghost-btn.accent {
+  color: var(--accent);
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.ghost-btn.accent:hover {
+  background: #dbeafe;
+}
+
+/* ---------- Library drawer ---------- */
+.drawer-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.28);
+  z-index: 900;
+  animation: fade-in 0.15s ease;
+}
+
+.library-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  width: 440px;
+  max-width: 92vw;
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  box-shadow: -8px 0 32px rgba(17, 24, 39, 0.14);
+  z-index: 901;
+  display: flex;
+  flex-direction: column;
+  animation: slide-in 0.18s ease;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.drawer-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.drawer-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.drawer-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.drawer-search {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.fld-input {
+  font-family: inherit;
+  font-size: 13px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--text);
+  width: 100%;
+}
+
+.fld-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 18px 24px;
+}
+
+.lib-section {
+  margin-top: 18px;
+}
+
+.lib-heading {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+
+.lib-exp-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 8px;
+  position: sticky;
+  top: -8px;
+  background: var(--panel);
+  padding: 6px 0 4px;
+  z-index: 1;
+}
+
+.lib-company {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.lib-dates {
+  font-size: 11px;
+  color: var(--muted);
+  margin-left: 8px;
+}
+
+.lib-role-btn {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 5px;
+  padding: 2px 8px;
+}
+
+.lib-role-btn:hover {
+  background: #dbeafe;
+}
+
+.lib-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 6px;
+  background: #fcfcfd;
+  transition: border-color 0.1s ease, background-color 0.1s ease;
+}
+
+.lib-item:hover {
+  border-color: #cdd7e5;
+  background: #fff;
+}
+
+.lib-item.added {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.lib-text {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text);
+  flex: 1;
+}
+
+.lib-skill-preview {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 3px;
+  line-height: 1.4;
+}
+
+.lib-insert {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--accent);
+  border-radius: 6px;
+  line-height: 1;
+}
+
+.lib-insert:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.lib-item.added .lib-insert {
+  color: #16a34a;
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  cursor: default;
+}
+
+/* summaries / skill "Use" buttons are wider */
+.lib-section > .lib-item .lib-insert {
+  width: auto;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+.drawer-foot {
+  padding: 12px 18px;
+  border-top: 1px solid var(--border);
+}
+
+/* ---------- Toast ---------- */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #111827;
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+}
