@@ -12,6 +12,9 @@ import { blankResume } from './lib/normalize'
 import { ingestResume, ingestFromUrl, listenForPostMessage } from './lib/ingest'
 import { seedIfEmpty } from './lib/seed'
 import { fitResume } from './lib/fit'
+import { getIdentity, setIdentity, subscribeIdentity, seedIdentityIfEmpty } from './lib/identity'
+import { getLibrary } from './lib/library'
+import type { ContactInfo } from './types/resume'
 import { buildBackup, isBackup, isEncryptedBackup, restoreBackup, restoreEncryptedBackup } from './lib/backup'
 import * as vault from './lib/vault'
 import { hydrate as hydrateSecure, lockSecure, isLocked } from './lib/securestore'
@@ -26,6 +29,12 @@ function useResumes(): Resume[] {
   const [resumes, setResumes] = useState<Resume[]>(() => getAllResumes())
   useEffect(() => subscribe(() => setResumes(getAllResumes())), [])
   return resumes
+}
+
+function useIdentity(): ContactInfo {
+  const [identity, setId] = useState<ContactInfo>(() => getIdentity())
+  useEffect(() => subscribeIdentity(() => setId(getIdentity())), [])
+  return identity
 }
 
 /** Download a string as a file. */
@@ -48,7 +57,7 @@ function downloadFile(name: string, contents: string, mime: string) {
  * illegal in filenames.
  */
 function fileBaseName(resume: Resume): string {
-  const name = (resume.contact.fullName || 'Resume').trim()
+  const name = (getIdentity().fullName || resume.contact.fullName || 'Resume').trim()
   const label = (resume.label || '').trim()
   const raw = label ? `${name} - ${label}` : `${name} - Resume`
   return raw
@@ -59,6 +68,7 @@ function fileBaseName(resume: Resume): string {
 
 export default function App() {
   const resumes = useResumes()
+  const identity = useIdentity()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [libraryOpen, setLibraryOpen] = useState(false)
@@ -84,6 +94,10 @@ export default function App() {
 
     // Seed the content library + prebuilt resume versions on first run.
     const seeded = seedIfEmpty()
+
+    // Global contact identity: carry over from any existing resume/library the
+    // first time (migration), so previously-entered contact isn't lost.
+    seedIdentityIfEmpty(getAllResumes().find((r) => r.contact?.fullName)?.contact ?? getLibrary().contact)
 
     // ?import=... from the referral tracker (or a shared link).
     const fromUrl = ingestFromUrl()
@@ -147,7 +161,9 @@ export default function App() {
 
   const handleExportJson = () => {
     if (!selected) return
-    downloadFile(`${fileBaseName(selected)}.json`, JSON.stringify(selected, null, 2), 'application/json')
+    // Bake the global identity into the exported file so it's standalone.
+    const standalone = { ...selected, contact: { ...selected.contact, ...getIdentity() } }
+    downloadFile(`${fileBaseName(selected)}.json`, JSON.stringify(standalone, null, 2), 'application/json')
   }
 
   const handleImportFile = async (file: File) => {
@@ -166,6 +182,9 @@ export default function App() {
         if (selectId) setSelectedId(selectId)
         showToast(`Restored ${count} resume${count === 1 ? '' : 's'} from backup.`)
       } else {
+        // Single resume: contact comes from the global identity, not the file —
+        // but seed the identity from the file the first time if it's still empty.
+        seedIdentityIfEmpty((data as { contact?: ContactInfo }).contact)
         const stored = ingestResume(data)
         setSelectedId(stored.id)
         showToast('Imported resume from file.')
@@ -244,7 +263,7 @@ export default function App() {
               }}
             >
               <span className="rli-label">{r.label}</span>
-              <span className="rli-name">{r.contact.fullName}</span>
+              <span className="rli-name">{identity.fullName || r.contact.fullName}</span>
             </li>
           ))}
           {resumes.length === 0 && <li className="resume-list-empty">No resumes yet.</li>}
@@ -311,7 +330,12 @@ export default function App() {
         <div className="doc-canvas">
           {selected ? (
             <SheetScaler key={selected.id}>
-              <ResumeDocument resume={selected} onChange={handleEditorChange} />
+              <ResumeDocument
+                resume={selected}
+                onChange={handleEditorChange}
+                identity={identity}
+                onIdentityChange={setIdentity}
+              />
             </SheetScaler>
           ) : (
             <div className="empty-state no-print">Create or import a resume to begin.</div>

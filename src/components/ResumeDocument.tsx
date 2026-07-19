@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from 'react'
 import type {
   Resume,
+  ContactInfo,
   ExperienceItem,
   EducationItem,
   ProjectItem,
@@ -115,19 +116,23 @@ function EditableDateRange({
 export function ResumeDocument({
   resume,
   onChange,
+  identity,
+  onIdentityChange,
 }: {
   resume: Resume
   onChange: (next: Resume) => void
+  identity: ContactInfo
+  onIdentityChange: (patch: Partial<ContactInfo>) => void
 }) {
   const sheetRef = useRef<HTMLElement>(null)
-  // Re-fit to one page whenever the resume content changes (after each commit).
+  // Re-fit to one page whenever the resume OR the shared contact changes.
   useLayoutEffect(() => {
     if (sheetRef.current) fitResume(sheetRef.current)
-  }, [resume])
+  }, [resume, identity])
 
   const set = (patch: Partial<Resume>) => onChange({ ...resume, ...patch })
-  const setContact = (patch: Partial<Resume['contact']>) =>
-    set({ contact: { ...resume.contact, ...patch } })
+  // Contact is the GLOBAL identity (same on every resume), not per-resume data.
+  const setContact = onIdentityChange
 
   const updateExp = (i: number, patch: Partial<ExperienceItem>) =>
     set({ experience: resume.experience.map((e, j) => (j === i ? { ...e, ...patch } : e)) })
@@ -151,14 +156,14 @@ export function ResumeDocument({
         <EditableText
           as="h1"
           className="rt-name"
-          value={resume.contact.fullName}
+          value={identity.fullName}
           placeholder="Your Name"
           onChange={(v) => setContact({ fullName: v })}
           ariaLabel="Full name"
         />
         <div className="rt-contact">
           {CONTACT_FIELDS.map((f) => {
-            const value = resume.contact[f.key] ?? ''
+            const value = identity[f.key] ?? ''
             const linkLabel = LINK_LABELS[f.key]
             return (
               <span className={`rt-contact-item ${value ? '' : 'is-empty'}`} key={f.key}>

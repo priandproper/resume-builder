@@ -10,9 +10,10 @@
  * When a passphrase vault is set up, backups are ENCRYPTED (AES-GCM). The file
  * carries the KDF salt so any device with the passphrase can decrypt it.
  */
-import type { Resume } from '../types/resume'
+import type { ContactInfo, Resume } from '../types/resume'
 import { getAllResumes, upsertResume } from './storage'
 import { getLibrary, replaceLibrary, type Library } from './library'
+import { getIdentity, setIdentity } from './identity'
 import { normalizeResume } from './normalize'
 import * as vault from './vault'
 
@@ -22,6 +23,7 @@ export const ENC_BACKUP_TYPE = 'resume-builder-backup-encrypted' as const
 interface StatePayload {
   resumes: Resume[]
   library: Library
+  identity?: ContactInfo
 }
 
 export interface PlainBackup extends StatePayload {
@@ -55,7 +57,7 @@ export function isBackup(data: unknown): boolean {
 
 /** Build a backup of the current state — encrypted if a vault is unlocked. */
 export async function buildBackup(nowIso: string): Promise<PlainBackup | EncryptedBackup> {
-  const payload: StatePayload = { resumes: getAllResumes(), library: getLibrary() }
+  const payload: StatePayload = { resumes: getAllResumes(), library: getLibrary(), identity: getIdentity() }
   if (vault.isConfigured() && vault.isUnlocked()) {
     const kdf = vault.getKdfParams()
     if (kdf) {
@@ -84,6 +86,9 @@ function applyState(payload: StatePayload): { count: number; selectId?: string }
   })
   if (payload.library && Array.isArray(payload.library.experiences)) {
     replaceLibrary(payload.library)
+  }
+  if (payload.identity && payload.identity.fullName !== undefined) {
+    setIdentity(payload.identity) // restore the global contact
   }
   return { count: list.length, selectId }
 }
