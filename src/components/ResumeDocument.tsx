@@ -85,31 +85,31 @@ function EntryControls({
   )
 }
 
-/** Editable "start – end" range. The dash shows only when BOTH dates exist, so
- *  a single date (e.g. a graduation date) prints cleanly with no stray dash,
- *  and an entry with no dates prints nothing. */
+/** A single editable date field showing "start – end" (or just one date, or
+ *  nothing). One field keeps the model's start/end but avoids stray dashes and
+ *  empty "Start"/"End" placeholders — type a range with a dash and it splits
+ *  back into startDate/endDate; type one value and it's the (end) date. */
 function EditableDateRange({
   start,
   end,
-  onStart,
-  onEnd,
+  onChange,
 }: {
   start: string
   end: string
-  onStart: (v: string) => void
-  onEnd: (v: string) => void
+  onChange: (start: string, end: string) => void
 }) {
-  return (
-    <span className="rt-dates">
-      <EditableText
-        value={start}
-        placeholder={end && !start ? '' : 'Start'}
-        onChange={onStart}
-      />
-      {start && end ? <span className="rt-dash"> – </span> : null}
-      <EditableText value={end} placeholder="End" onChange={onEnd} />
-    </span>
-  )
+  const combined = [start, end].filter(Boolean).join(' – ')
+  const handle = (value: string) => {
+    const t = value.trim()
+    if (!t) return onChange('', '')
+    const parts = t.split(/\s*[–—-]\s*/)
+    if (parts.length >= 2 && parts[0] && parts[parts.length - 1]) {
+      onChange(parts[0].trim(), parts.slice(1).join(' – ').trim())
+    } else {
+      onChange('', t) // a lone value is treated as the end/graduation date
+    }
+  }
+  return <EditableText className="rt-dates" value={combined} placeholder="Dates" onChange={handle} />
 }
 
 export function ResumeDocument({
@@ -219,8 +219,7 @@ export function ResumeDocument({
                 <EditableDateRange
                   start={exp.startDate ?? ''}
                   end={exp.endDate ?? ''}
-                  onStart={(v) => updateExp(i, { startDate: v })}
-                  onEnd={(v) => updateExp(i, { endDate: v })}
+                  onChange={(s, e) => updateExp(i, { startDate: s, endDate: e })}
                 />
                 <EditableText className="rt-location" value={exp.location ?? ''} placeholder="Location" onChange={(v) => updateExp(i, { location: v })} />
               </div>
@@ -265,8 +264,7 @@ export function ResumeDocument({
                 <EditableDateRange
                   start={ed.startDate ?? ''}
                   end={ed.endDate ?? ''}
-                  onStart={(v) => updateEdu(i, { startDate: v })}
-                  onEnd={(v) => updateEdu(i, { endDate: v })}
+                  onChange={(s, e) => updateEdu(i, { startDate: s, endDate: e })}
                 />
                 <EditableText className="rt-location" value={ed.location ?? ''} placeholder="Location" onChange={(v) => updateEdu(i, { location: v })} />
               </div>
