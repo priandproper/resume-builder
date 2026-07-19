@@ -151,7 +151,7 @@ export function addSummaryToLibrary(text: string): void {
 /**
  * A normalized key for matching company names across resume versions, which
  * often differ in their parenthetical qualifiers — e.g. "Acme Corp
- * (Banking SaaS / Fintech)" vs "Acme Corp (Banking SaaS)" should match.
+ * (SaaS / Fintech)" vs "Acme Corp (SaaS)" should match.
  * Strips parentheticals and punctuation down to the core name.
  */
 export function companyKey(name: string): string {

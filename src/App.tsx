@@ -42,7 +42,7 @@ function downloadFile(name: string, contents: string, mime: string) {
 
 /**
  * Filename convention for exports (PDF + JSON): "<Full Name> - <Label>".
- * e.g. "Jane Doe - Amazon Business PMM". Keeps the person's name first
+ * e.g. "Jane Doe - Acme PMM". Keeps the person's name first
  * (what recruiters expect) — never the app name. Strips characters that are
  * illegal in filenames.
  */
@@ -214,7 +214,7 @@ export default function App() {
     if (sheet) fitResume(sheet)
 
     // The browser's "Save as PDF" defaults the filename to document.title, so
-    // set it to our convention (e.g. "Jane Doe - Amazon Business PMM")
+    // set it to our convention (e.g. "Jane Doe - Acme PMM")
     // just for the print, then restore it.
     const prevTitle = document.title
     if (selected) document.title = fileBaseName(selected)
