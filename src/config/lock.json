@@ -1,0 +1,7 @@
+{
+  "_comment": "GLOBAL app lock. When enabled, EVERY device shows the passphrase screen on open and the same passphrase unlocks + decrypts everywhere. Generate this with the in-app 'Set up app lock' tool and paste the result here (it contains only a salt + a verifier — NOT your passphrase). Safe to commit publicly.",
+  "enabled": false,
+  "salt": "",
+  "iterations": 210000,
+  "verifier": ""
+}

@@ -11,6 +11,8 @@
  * strong one. Forgetting it means the data is unrecoverable — by design.
  */
 
+import lockConfig from '../config/lock.json'
+
 const VAULT_META_KEY = 'resume-builder:vault:v1'
 const ITERATIONS = 210000
 const VERIFIER_TOKEN = 'resume-builder-vault-ok'
@@ -20,6 +22,15 @@ interface VaultMeta {
   iterations: number
   verifier: string // AES-GCM(VERIFIER_TOKEN) — proves a passphrase is correct
 }
+
+// A GLOBAL lock baked into the code (src/config/lock.json): when enabled, every
+// device is locked with the same passphrase, no per-device setup. The committed
+// config holds only a salt + verifier (never the passphrase), so it's safe to
+// be public — the passphrase is still required to derive the key.
+const globalLock =
+  lockConfig && lockConfig.enabled && lockConfig.salt && lockConfig.verifier
+    ? (lockConfig as VaultMeta & { enabled: boolean })
+    : null
 
 // The derived key lives only in memory, only while unlocked.
 let cryptoKey: CryptoKey | null = null
@@ -82,8 +93,14 @@ async function decryptWith(key: CryptoKey, packedB64: string): Promise<string> {
 
 // ---- public API ----
 
+/** True if a lock exists — a global one baked in the code, or a per-device one. */
 export function isConfigured(): boolean {
-  return !!localStorage.getItem(VAULT_META_KEY)
+  return !!globalLock || !!localStorage.getItem(VAULT_META_KEY)
+}
+
+/** True when the lock is the global (code-baked) one — same passphrase everywhere. */
+export function isGlobal(): boolean {
+  return !!globalLock
 }
 
 export function isUnlocked(): boolean {
@@ -91,6 +108,8 @@ export function isUnlocked(): boolean {
 }
 
 function readMeta(): VaultMeta | null {
+  // The global lock takes precedence, so a fresh device is locked with no setup.
+  if (globalLock) return { salt: globalLock.salt, iterations: globalLock.iterations, verifier: globalLock.verifier }
   const raw = localStorage.getItem(VAULT_META_KEY)
   if (!raw) return null
   try {
@@ -98,6 +117,17 @@ function readMeta(): VaultMeta | null {
   } catch {
     return null
   }
+}
+
+/** Generate a global-lock config from a passphrase (for the setup tool). The
+ *  returned object is safe to commit to src/config/lock.json — no passphrase. */
+export async function generateGlobalConfig(
+  passphrase: string,
+): Promise<{ enabled: true; salt: string; iterations: number; verifier: string }> {
+  const salt = crypto.getRandomValues(new Uint8Array(16))
+  const key = await deriveKey(passphrase, salt, ITERATIONS)
+  const verifier = await encryptWith(key, VERIFIER_TOKEN)
+  return { enabled: true, salt: b64encode(salt), iterations: ITERATIONS, verifier }
 }
 
 /** Create a vault from a passphrase and unlock it. */

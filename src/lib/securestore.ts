@@ -78,19 +78,38 @@ function managedKeys(): string[] {
   return keys
 }
 
-/** After a successful unlock: decrypt all managed keys into the cache. */
+function looksLikePlaintextJson(v: string): boolean {
+  const t = v.trim()
+  if (t[0] !== '{' && t[0] !== '[') return false
+  try {
+    JSON.parse(t)
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** After a successful unlock: decrypt all managed keys into the cache. Any value
+ *  that's still plaintext (e.g. data written before a lock was enabled) is
+ *  adopted as-is and re-encrypted, so enabling the lock migrates old data. */
 export async function hydrate(): Promise<void> {
   cache.clear()
+  const migrate: string[] = []
   for (const k of managedKeys()) {
-    const ct = localStorage.getItem(k)
-    if (ct == null) continue
+    const raw = localStorage.getItem(k)
+    if (raw == null) continue
     try {
-      cache.set(k, await vault.decrypt(ct))
+      cache.set(k, await vault.decrypt(raw))
     } catch {
-      /* not our ciphertext / corrupt — skip */
+      if (looksLikePlaintextJson(raw)) {
+        cache.set(k, raw) // legacy plaintext — keep and re-encrypt below
+        migrate.push(k)
+      }
+      /* else: not ours / corrupt — skip */
     }
   }
   unlocked = true
+  await Promise.all(migrate.map((k) => persist(k)))
   emit()
 }
 

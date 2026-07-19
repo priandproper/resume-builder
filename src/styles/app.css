@@ -830,3 +830,28 @@ button {
   margin-top: 8px;
   font-size: 12px;
 }
+
+.lock-card-wide {
+  max-width: 460px;
+  text-align: left;
+}
+
+.lock-hint {
+  font-size: 12px;
+  color: var(--muted);
+  margin: -4px 0 10px;
+}
+
+.lock-config-out {
+  width: 100%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #f8fafc;
+  color: var(--text);
+  resize: vertical;
+  margin-bottom: 12px;
+}

@@ -14,8 +14,9 @@ import { seedIfEmpty } from './lib/seed'
 import { fitResume } from './lib/fit'
 import { buildBackup, isBackup, isEncryptedBackup, restoreBackup, restoreEncryptedBackup } from './lib/backup'
 import * as vault from './lib/vault'
-import { hydrate as hydrateSecure, lockSecure, migratePlaintextToEncrypted, isLocked } from './lib/securestore'
+import { hydrate as hydrateSecure, lockSecure, isLocked } from './lib/securestore'
 import { LockScreen } from './components/LockScreen'
+import { SetupGlobalLock } from './components/SetupGlobalLock'
 import { ResumeDocument } from './components/ResumeDocument'
 import { LibraryDrawer } from './components/LibraryDrawer'
 import { SheetScaler } from './components/SheetScaler'
@@ -63,7 +64,7 @@ export default function App() {
   const [libraryOpen, setLibraryOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false) // off-canvas resume list on mobile
   const [locked, setLocked] = useState(() => isLocked()) // vault configured but not unlocked
-  const [showSetup, setShowSetup] = useState(false)
+  const [showGlobalSetup, setShowGlobalSetup] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const showToast = (msg: string) => {
@@ -191,14 +192,6 @@ export default function App() {
     return true
   }
 
-  const handleSetupLock = async (passphrase: string) => {
-    await vault.setupVault(passphrase)
-    await migratePlaintextToEncrypted()
-    setShowSetup(false)
-    setLocked(false)
-    showToast('Lock enabled — your data is now encrypted.')
-  }
-
   const handleLockNow = async () => {
     await lockSecure()
     bootstrapped.current = false
@@ -281,8 +274,8 @@ export default function App() {
               🔒 Lock now
             </button>
           ) : (
-            <button className="ghost-btn lock-toggle" onClick={() => setShowSetup(true)}>
-              🔒 Set up passphrase lock
+            <button className="ghost-btn lock-toggle" onClick={() => setShowGlobalSetup(true)}>
+              🔒 Set up app lock
             </button>
           )}
         </div>
@@ -337,13 +330,7 @@ export default function App() {
       {toast && <div className="toast no-print">{toast}</div>}
 
       {locked && <LockScreen mode="unlock" onUnlock={handleUnlock} />}
-      {showSetup && (
-        <LockScreen
-          mode="setup"
-          onSetup={handleSetupLock}
-          onCancelSetup={() => setShowSetup(false)}
-        />
-      )}
+      {showGlobalSetup && <SetupGlobalLock onClose={() => setShowGlobalSetup(false)} />}
     </div>
   )
 }
