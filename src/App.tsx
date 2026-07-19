@@ -14,6 +14,7 @@ import { seedIfEmpty } from './lib/seed'
 import { fitResume } from './lib/fit'
 import { ResumeDocument } from './components/ResumeDocument'
 import { LibraryDrawer } from './components/LibraryDrawer'
+import { Logo } from './components/Logo'
 
 function useResumes(): Resume[] {
   const [resumes, setResumes] = useState<Resume[]>(() => getAllResumes())
@@ -34,8 +35,20 @@ function downloadFile(name: string, contents: string, mime: string) {
   URL.revokeObjectURL(url)
 }
 
-function slugify(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'resume'
+/**
+ * Filename convention for exports (PDF + JSON): "<Full Name> - <Label>".
+ * e.g. "Jane Doe - Amazon Business PMM". Keeps the person's name first
+ * (what recruiters expect) — never the app name. Strips characters that are
+ * illegal in filenames.
+ */
+function fileBaseName(resume: Resume): string {
+  const name = (resume.contact.fullName || 'Resume').trim()
+  const label = (resume.label || '').trim()
+  const raw = label ? `${name} - ${label}` : `${name} - Resume`
+  return raw
+    .replace(/[\\/:*?"<>|]/g, '') // characters not allowed in filenames
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 export default function App() {
@@ -124,7 +137,7 @@ export default function App() {
 
   const handleExportJson = () => {
     if (!selected) return
-    downloadFile(`${slugify(selected.label)}.json`, JSON.stringify(selected, null, 2), 'application/json')
+    downloadFile(`${fileBaseName(selected)}.json`, JSON.stringify(selected, null, 2), 'application/json')
   }
 
   const handleImportFile = async (file: File) => {
@@ -144,14 +157,29 @@ export default function App() {
     // inherited into print), then hand off to the browser's PDF export.
     const sheet = document.getElementById('resume-print-root')
     if (sheet) fitResume(sheet)
+
+    // The browser's "Save as PDF" defaults the filename to document.title, so
+    // set it to our convention (e.g. "Jane Doe - Amazon Business PMM")
+    // just for the print, then restore it.
+    const prevTitle = document.title
+    if (selected) document.title = fileBaseName(selected)
+    const restore = () => {
+      document.title = prevTitle
+      window.removeEventListener('afterprint', restore)
+    }
+    window.addEventListener('afterprint', restore)
     window.print()
+    window.setTimeout(restore, 1500) // fallback if afterprint doesn't fire
   }
 
   return (
     <div className="app">
       <aside className="sidebar no-print">
         <div className="sidebar-head">
-          <span className="brand">Resume Builder</span>
+          <span className="brand">
+            <Logo size={20} />
+            Resume Builder
+          </span>
           <button className="add-btn" onClick={handleNew}>+ New</button>
         </div>
         <ul className="resume-list">
