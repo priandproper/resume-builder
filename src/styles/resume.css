@@ -69,8 +69,10 @@
 }
 
 /* ---- Sections ---- */
+/* --rt-fill is added by fitResume() to distribute leftover vertical space so
+   the content fills the page instead of leaving a gap at the bottom. */
 .rt-section {
-  margin-bottom: calc(var(--rt-font) * 0.6);
+  margin-bottom: calc(var(--rt-font) * 0.6 + var(--rt-fill, 0px));
 }
 
 .rt-section-title {
@@ -90,7 +92,7 @@
 
 /* ---- Entries (experience / education / projects) ---- */
 .rt-entry {
-  margin-bottom: calc(var(--rt-font) * 0.45);
+  margin-bottom: calc(var(--rt-font) * 0.45 + var(--rt-fill, 0px));
 }
 
 .rt-entry:last-child {

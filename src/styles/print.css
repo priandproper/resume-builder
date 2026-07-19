@@ -1,18 +1,25 @@
 /**
- * Print scoping. When the user hits "Download PDF" we call window.print().
- * These rules hide all app chrome AND all editing affordances, printing ONLY
- * the resume content at true Letter size — selectable, ATS-readable text that
- * matches what's on screen (minus the editing controls and empty placeholders).
+ * Print = an exact mirror of the on-screen sheet.
+ *
+ * The trick to WYSIWYG: DON'T reshape the sheet for print. On screen the sheet
+ * is a real 8.5in × 11in page with 0.4in padding — so we print the page itself
+ * at that exact size (@page margin: 0) and leave the sheet's own width/padding
+ * untouched. The only print-specific changes are hiding the app chrome and the
+ * editing-only affordances. What you see is literally what prints.
  */
 @media print {
   @page {
     size: letter;
+    /* Standard 0.4in page margins — respected by the print dialog's default, so
+       the resume isn't scaled/clipped the way a full-bleed 8.5in sheet would be. */
     margin: 0.4in;
   }
 
   html,
   body {
     background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
     height: auto !important;
   }
 
@@ -25,6 +32,7 @@
     display: none !important;
   }
 
+  /* Collapse the app shell so only the sheet remains, at its natural size. */
   .app,
   .workspace,
   .doc-canvas {
@@ -38,16 +46,17 @@
     background: #fff !important;
   }
 
+  /* The sheet's CONTENT box on screen is 8.5in − 2×0.4in padding = 7.7in wide.
+     Reproduce exactly that here (7.7in wide, no padding) inside the 0.4in @page
+     margins — same content width ⇒ text wraps identically ⇒ true mirror. The
+     adaptive font (--rt-font) is inherited, so sizing matches too. min-height:0
+     avoids a page-tall box spilling to a blank second page. */
   .resume-sheet {
     box-shadow: none !important;
-    /* One-page fit is handled by the adaptive base font (--rt-font), computed on
-       screen so what you see is what prints. Here we just drop the page chrome;
-       @page's 0.4in margin matches the sheet's on-screen padding, so the content
-       width (and therefore the fit) is identical on screen and on paper. */
-    width: 100% !important;
-    min-height: auto !important;
+    width: 7.7in !important;
     padding: 0 !important;
-    margin: 0 !important;
+    min-height: 0 !important;
+    margin: 0 auto !important;
   }
 
   /* Editable fields print as plain text — no hover/focus backgrounds. */
@@ -68,9 +77,7 @@
     display: none !important;
   }
 
-  /* Keep individual entries from splitting across a page break, but allow a
-     SECTION to break (avoiding it on the section is what pushed a whole tall
-     Experience block onto page 2, leaving page 1 with just the summary). */
+  /* Don't split an individual entry across the (single) page. */
   .rt-entry {
     break-inside: avoid;
   }

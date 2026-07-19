@@ -4,66 +4,66 @@
  * Every resume must export as one solid page. The whole template derives its
  * sizing from a single base font on the sheet (`--rt-font`), so scaling that one
  * value scales the entire resume — fonts and spacing together. This routine
- * picks the base font that makes the content fill exactly one printable page
- * (growing to fill whitespace, shrinking to avoid a second page), then shrinks
- * the contact line's font (`--rt-contact-font`) just enough to keep it on ONE
- * line.
+ * picks the base font that makes the content fill one printable page, shrinks
+ * the contact font (`--rt-contact-font`) so the contact stays on ONE line, then
+ * distributes any leftover space (`--rt-fill`) so the page reads as full.
  *
- * To measure the *printed* height we must exclude what print hides (edit
- * controls, "+ add" affordances, empty sections). We hide those with direct
- * inline styles rather than a CSS class, because a class toggled during React's
- * layout phase isn't reliably applied before getBoundingClientRect().
+ * Crucial detail: we measure with the sheet temporarily in its PRINT geometry
+ * (content width 7.7in, no padding, no min-height) and with the print-hidden
+ * bits (edit controls, "+ add", empty sections) hidden via inline styles — so
+ * the measured height is exactly what prints. Everything is restored before the
+ * browser paints (this runs in a layout effect), so nothing flashes on screen.
  */
 
-// Base font search bounds (pt). Floor keeps it readable; ceiling avoids a tiny
-// resume ballooning to a comic size.
 const MIN_FONT = 7
 const MAX_FONT = 11.5
-// Printable page geometry (US Letter with 0.4in margins).
 const PAGE_IN = 11
 const MARGIN_IN = 0.4
+const CONTENT_W_IN = 8.5 - 2 * MARGIN_IN // 7.7in — the printed content width
 
 const HIDE_SELECTOR =
   '.doc-add, .doc-add-entry, .doc-ctrl, .doc-entry-ctrls, .rt-section.is-empty, .rt-bullets li.is-empty'
 
-function contentHeightPx(sheet: HTMLElement): number {
-  const header = sheet.querySelector('.rt-header') as HTMLElement | null
-  const sections = Array.from(sheet.querySelectorAll('.rt-section')).filter(
-    (s) => (s as HTMLElement).offsetHeight > 0,
-  ) as HTMLElement[]
-  if (!header || sections.length === 0) return 0
-  const top = header.getBoundingClientRect().top
-  const bottom = sections[sections.length - 1].getBoundingClientRect().bottom
-  return bottom - top
-}
-
 /** Fit one resume sheet to a single page. Idempotent; safe to call repeatedly. */
 export function fitResume(sheet: HTMLElement): void {
-  // Pixels-per-inch in the current rendering (DPR-independent): the sheet's top
-  // padding is exactly MARGIN_IN inches.
+  // pixels-per-inch in the current rendering (from the 0.4in padding), read
+  // BEFORE we override the padding.
   const padTop = parseFloat(getComputedStyle(sheet).paddingTop) || 0
   const pxPerIn = padTop > 0 ? padTop / MARGIN_IN : 96
-  const targetPx = (PAGE_IN - 2 * MARGIN_IN) * pxPerIn
+  // Font is fit to a slightly conservative height; fill can reach nearer the edge.
+  const fontTargetPx = (PAGE_IN - 2 * MARGIN_IN - 0.15) * pxPerIn
+  const fillTargetPx = (PAGE_IN - 2 * MARGIN_IN - 0.05) * pxPerIn
 
-  // Hide print-hidden bits via inline styles so the measurement matches the PDF.
+  // Put the sheet into print geometry + hide print-hidden bits, so getBounding-
+  // ClientRect().height equals the true printed content height.
+  const saved = {
+    width: sheet.style.width,
+    padding: sheet.style.padding,
+    minHeight: sheet.style.minHeight,
+  }
   const hidden = Array.from(sheet.querySelectorAll(HIDE_SELECTOR)) as HTMLElement[]
   const prevDisplay = hidden.map((el) => el.style.display)
+
+  sheet.style.setProperty('--rt-fill', '0px')
+  sheet.style.setProperty('--rt-contact-font', '')
+  sheet.style.width = `${CONTENT_W_IN}in`
+  sheet.style.padding = '0'
+  sheet.style.minHeight = '0'
   hidden.forEach((el) => {
     el.style.display = 'none'
   })
 
+  const printHeight = () => sheet.getBoundingClientRect().height
+
   try {
-    // 1) Vertical fit — BINARY SEARCH for the largest base font whose content
-    //    still fits one page. Monotonic and deterministic (the fixed-point
-    //    iteration oscillated around line-wrap boundaries and never settled).
-    sheet.style.setProperty('--rt-contact-font', '') // let contact ride the base while we measure
+    // 1) Vertical fit — binary-search the largest base font that fits one page.
     let lo = MIN_FONT
     let hi = MAX_FONT
     for (let i = 0; i < 14; i++) {
       const mid = (lo + hi) / 2
       sheet.style.setProperty('--rt-font', `${mid}pt`)
-      const h = contentHeightPx(sheet)
-      if (h > 0 && h <= targetPx) lo = mid
+      const h = printHeight()
+      if (h > 0 && h <= fontTargetPx) lo = mid
       else hi = mid
     }
     const font = lo
@@ -81,7 +81,22 @@ export function fitResume(sheet: HTMLElement): void {
         guard++
       }
     }
+
+    // 3) Vertical justification — spread leftover space across section/entry gaps
+    //    so the page fills instead of leaving a gap at the bottom.
+    const leftover = fillTargetPx - printHeight()
+    let gaps = 0
+    sheet.querySelectorAll('.rt-section, .rt-entry').forEach((el) => {
+      if ((el as HTMLElement).offsetHeight > 0) gaps++
+    })
+    if (leftover > 6 && gaps > 0) {
+      const per = Math.min(leftover / gaps, 0.4 * pxPerIn)
+      sheet.style.setProperty('--rt-fill', `${per.toFixed(2)}px`)
+    }
   } finally {
+    sheet.style.width = saved.width
+    sheet.style.padding = saved.padding
+    sheet.style.minHeight = saved.minHeight
     hidden.forEach((el, i) => {
       el.style.display = prevDisplay[i]
     })
