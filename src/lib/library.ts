@@ -108,6 +108,11 @@ function save(lib: Library) {
   emit()
 }
 
+/** Replace the whole library (used when restoring a full-state backup). */
+export function replaceLibrary(lib: Library): void {
+  save(lib)
+}
+
 /** Add a bullet to a library experience if it's not already present (dedupe by
  *  normalized text). Returns the (possibly existing) bullet. */
 export function addBulletToLibrary(experienceId: string, text: string): void {

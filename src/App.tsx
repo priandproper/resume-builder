@@ -12,8 +12,10 @@ import { blankResume } from './lib/normalize'
 import { ingestResume, ingestFromUrl, listenForPostMessage } from './lib/ingest'
 import { seedIfEmpty } from './lib/seed'
 import { fitResume } from './lib/fit'
+import { buildBackup, isBackup, restoreBackup } from './lib/backup'
 import { ResumeDocument } from './components/ResumeDocument'
 import { LibraryDrawer } from './components/LibraryDrawer'
+import { SheetScaler } from './components/SheetScaler'
 import { Logo } from './components/Logo'
 
 function useResumes(): Resume[] {
@@ -56,6 +58,7 @@ export default function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [libraryOpen, setLibraryOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false) // off-canvas resume list on mobile
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const showToast = (msg: string) => {
@@ -144,12 +147,25 @@ export default function App() {
     try {
       const text = await file.text()
       const data = JSON.parse(text)
-      const stored = ingestResume(data)
-      setSelectedId(stored.id)
-      showToast('Imported resume from file.')
+      if (isBackup(data)) {
+        // A whole-state backup (e.g. from iCloud) — restore everything.
+        const { count, selectId } = restoreBackup(data)
+        if (selectId) setSelectedId(selectId)
+        showToast(`Restored ${count} resume${count === 1 ? '' : 's'} from backup.`)
+      } else {
+        const stored = ingestResume(data)
+        setSelectedId(stored.id)
+        showToast('Imported resume from file.')
+      }
     } catch (err) {
       showToast(`Import failed: ${err instanceof Error ? err.message : String(err)}`)
     }
+  }
+
+  const handleBackup = () => {
+    const backup = buildBackup(new Date().toISOString())
+    downloadFile('Resume Builder - Backup.json', JSON.stringify(backup, null, 2), 'application/json')
+    showToast(`Backed up ${backup.resumes.length} resume${backup.resumes.length === 1 ? '' : 's'} + library.`)
   }
 
   const handlePrint = () => {
@@ -174,7 +190,10 @@ export default function App() {
 
   return (
     <div className="app">
-      <aside className="sidebar no-print">
+      {sidebarOpen && (
+        <div className="drawer-scrim mobile-only no-print" onClick={() => setSidebarOpen(false)} />
+      )}
+      <aside className={`sidebar no-print ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-head">
           <span className="brand">
             <Logo size={20} />
@@ -187,7 +206,10 @@ export default function App() {
             <li
               key={r.id}
               className={`resume-list-item ${r.id === selectedId ? 'active' : ''}`}
-              onClick={() => setSelectedId(r.id)}
+              onClick={() => {
+                setSelectedId(r.id)
+                setSidebarOpen(false)
+              }}
             >
               <span className="rli-label">{r.label}</span>
               <span className="rli-name">{r.contact.fullName}</span>
@@ -207,14 +229,26 @@ export default function App() {
               e.target.value = ''
             }}
           />
-          <button className="ghost-btn" onClick={() => fileInputRef.current?.click()}>
-            Import JSON
-          </button>
+          <div className="sidebar-foot-row">
+            <button className="ghost-btn" onClick={() => fileInputRef.current?.click()}>
+              Import
+            </button>
+            <button className="ghost-btn" onClick={handleBackup}>
+              Backup all
+            </button>
+          </div>
         </div>
       </aside>
 
       <main className="workspace">
         <div className="toolbar no-print">
+          <button
+            className="hamburger mobile-only"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open resume list"
+          >
+            ☰
+          </button>
           {selected ? (
             <>
               <span className="toolbar-title">{selected.label}</span>
@@ -235,7 +269,9 @@ export default function App() {
 
         <div className="doc-canvas">
           {selected ? (
-            <ResumeDocument key={selected.id} resume={selected} onChange={handleEditorChange} />
+            <SheetScaler key={selected.id}>
+              <ResumeDocument resume={selected} onChange={handleEditorChange} />
+            </SheetScaler>
           ) : (
             <div className="empty-state no-print">Create or import a resume to begin.</div>
           )}

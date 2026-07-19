@@ -53,7 +53,10 @@ export function fitResume(sheet: HTMLElement): void {
     el.style.display = 'none'
   })
 
-  const printHeight = () => sheet.getBoundingClientRect().height
+  // offsetHeight is the LAYOUT height — unaffected by any CSS transform on an
+  // ancestor (e.g. the mobile fit-to-width scaler), so the fit stays correct
+  // when the sheet is displayed scaled down.
+  const printHeight = () => sheet.offsetHeight
 
   try {
     // 1) Vertical fit — binary-search the largest base font that fits one page.

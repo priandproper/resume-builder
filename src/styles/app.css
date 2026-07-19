@@ -115,6 +115,15 @@ body {
   border-top: 1px solid var(--border);
 }
 
+.sidebar-foot-row {
+  display: flex;
+  gap: 8px;
+}
+
+.sidebar-foot-row .ghost-btn {
+  flex: 1;
+}
+
 /* ---------- Workspace ---------- */
 .workspace {
   flex: 1;
@@ -165,9 +174,41 @@ body {
   overflow: auto;
   background: var(--bg);
   padding: 32px 24px 64px;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
+}
+
+/* Scales the fixed 8.5in sheet down to fit narrow screens (phones). */
+.sheet-scaler {
+  width: 100%;
+}
+
+.sheet-scaler-box {
+  position: relative;
+  width: 100%;
+}
+
+.sheet-scaler-inner {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 816px; /* 8.5in @ 96dpi */
+  margin-left: -408px;
+  transform-origin: top center;
+}
+
+/* Visibility helpers (mobile bits are hidden until the media query below). */
+.mobile-only {
+  display: none;
+}
+
+.hamburger {
+  background: none;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  padding: 4px 8px;
+  margin-right: 2px;
+  color: var(--text);
+  cursor: pointer;
 }
 
 .empty-state {
@@ -636,4 +677,61 @@ button {
   font-size: 13px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   z-index: 1000;
+}
+
+/* ---------- Mobile (phones / narrow screens) ---------- */
+@media (max-width: 820px) {
+  .mobile-only {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* Resume list becomes an off-canvas drawer toggled by the hamburger. */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 82vw;
+    max-width: 320px;
+    z-index: 950;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    box-shadow: 2px 0 28px rgba(17, 24, 39, 0.18);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* Toolbar: hamburger + title on the first row, actions wrap below. */
+  .toolbar {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .toolbar-title {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+  }
+
+  .toolbar-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .toolbar-actions .ghost-btn,
+  .toolbar-actions .primary-btn {
+    padding: 7px 11px;
+    font-size: 12px;
+  }
+
+  .doc-canvas {
+    padding: 12px 8px 40px;
+  }
+
+  /* The library drawer already caps at 92vw — nothing else needed there. */
 }
