@@ -12,6 +12,7 @@
  */
 import type { ContactInfo, EducationItem, SkillGroup } from '../types/resume'
 import { newId } from './normalize'
+import { secureGet, secureSet, subscribeSecure } from './securestore'
 import profile from '../data/profile.json'
 
 export interface LibraryBullet {
@@ -54,6 +55,9 @@ function emit() {
   listeners.forEach((fn) => fn())
 }
 
+// Refresh when the vault locks/unlocks.
+subscribeSecure(emit)
+
 interface SeedExperience {
   id: string
   company: string
@@ -85,26 +89,26 @@ export function buildSeedLibrary(): Library {
 
 export function getLibrary(): Library {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = secureGet(STORAGE_KEY)
     if (raw) return JSON.parse(raw) as Library
   } catch {
     /* fall through to seed */
   }
   const seed = buildSeedLibrary()
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(seed))
+  secureSet(STORAGE_KEY, JSON.stringify(seed))
   return seed
 }
 
 /** Seed the library on first run if it isn't there yet. Returns whether seeded. */
 export function ensureLibrarySeeded(): boolean {
-  if (localStorage.getItem(STORAGE_KEY)) return false
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(buildSeedLibrary()))
+  if (secureGet(STORAGE_KEY)) return false
+  secureSet(STORAGE_KEY, JSON.stringify(buildSeedLibrary()))
   emit()
   return true
 }
 
 function save(lib: Library) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(lib))
+  secureSet(STORAGE_KEY, JSON.stringify(lib))
   emit()
 }
 

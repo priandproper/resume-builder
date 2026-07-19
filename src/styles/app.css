@@ -735,3 +735,98 @@ button {
 
   /* The library drawer already caps at 92vw — nothing else needed there. */
 }
+
+/* ---------- Passphrase lock screen ---------- */
+.lock-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: linear-gradient(160deg, #eef2ff 0%, #f3f4f6 60%, #eef2f7 100%);
+}
+
+.lock-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 18px 60px rgba(17, 24, 39, 0.16);
+  padding: 32px 28px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: center;
+}
+
+.lock-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.lock-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+
+.lock-sub {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0 0 20px;
+}
+
+.lock-input {
+  font-family: inherit;
+  font-size: 15px;
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--text);
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.lock-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+}
+
+.lock-error {
+  color: var(--danger);
+  font-size: 12.5px;
+  margin: 2px 0 10px;
+}
+
+.lock-submit {
+  width: 100%;
+  padding: 11px 16px;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.lock-cancel {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 12px;
+  cursor: pointer;
+}
+
+.lock-cancel:hover {
+  color: var(--text);
+}
+
+.lock-toggle {
+  width: 100%;
+  margin-top: 8px;
+  font-size: 12px;
+}

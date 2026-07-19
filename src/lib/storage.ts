@@ -1,5 +1,6 @@
 import type { Resume } from '../types/resume'
 import { normalizeResume } from './normalize'
+import { secureGet, secureSet, subscribeSecure } from './securestore'
 
 const STORAGE_KEY = 'resume-builder:resumes:v1'
 
@@ -16,9 +17,12 @@ function emit() {
   listeners.forEach((fn) => fn())
 }
 
+// Refresh when the vault locks/unlocks (data appears/disappears).
+subscribeSecure(emit)
+
 function readRaw(): Resume[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = secureGet(STORAGE_KEY)
     if (!raw) return []
     const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
@@ -36,7 +40,7 @@ function readRaw(): Resume[] {
 }
 
 function writeRaw(resumes: Resume[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(resumes))
+  secureSet(STORAGE_KEY, JSON.stringify(resumes))
   emit()
 }
 

@@ -12,7 +12,10 @@ import { blankResume } from './lib/normalize'
 import { ingestResume, ingestFromUrl, listenForPostMessage } from './lib/ingest'
 import { seedIfEmpty } from './lib/seed'
 import { fitResume } from './lib/fit'
-import { buildBackup, isBackup, restoreBackup } from './lib/backup'
+import { buildBackup, isBackup, isEncryptedBackup, restoreBackup, restoreEncryptedBackup } from './lib/backup'
+import * as vault from './lib/vault'
+import { hydrate as hydrateSecure, lockSecure, migratePlaintextToEncrypted, isLocked } from './lib/securestore'
+import { LockScreen } from './components/LockScreen'
 import { ResumeDocument } from './components/ResumeDocument'
 import { LibraryDrawer } from './components/LibraryDrawer'
 import { SheetScaler } from './components/SheetScaler'
@@ -59,6 +62,8 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null)
   const [libraryOpen, setLibraryOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false) // off-canvas resume list on mobile
+  const [locked, setLocked] = useState(() => isLocked()) // vault configured but not unlocked
+  const [showSetup, setShowSetup] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const showToast = (msg: string) => {
@@ -72,7 +77,8 @@ export default function App() {
   // of the *initial* selection, so it must not race the reconcile effect below.
   const bootstrapped = useRef(false)
   useEffect(() => {
-    if (bootstrapped.current) return
+    // Don't seed/import while locked — storage writes are no-ops until unlocked.
+    if (locked || bootstrapped.current) return
     bootstrapped.current = true
 
     // Seed the content library + prebuilt resume versions on first run.
@@ -91,7 +97,7 @@ export default function App() {
     const list = getAllResumes()
     setSelectedId(importedId ?? seeded.selectId ?? list[0]?.id ?? null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [locked])
 
   // Live postMessage ingress (its own effect so cleanup runs correctly).
   useEffect(
@@ -147,8 +153,14 @@ export default function App() {
     try {
       const text = await file.text()
       const data = JSON.parse(text)
-      if (isBackup(data)) {
-        // A whole-state backup (e.g. from iCloud) — restore everything.
+      if (isEncryptedBackup(data)) {
+        // Encrypted whole-state backup — decrypt (prompt if it's from another device).
+        const { count, selectId } = await restoreEncryptedBackup(data, () =>
+          window.prompt('Enter the passphrase this backup was encrypted with:'),
+        )
+        if (selectId) setSelectedId(selectId)
+        showToast(`Restored ${count} resume${count === 1 ? '' : 's'} from encrypted backup.`)
+      } else if (isBackup(data)) {
         const { count, selectId } = restoreBackup(data)
         if (selectId) setSelectedId(selectId)
         showToast(`Restored ${count} resume${count === 1 ? '' : 's'} from backup.`)
@@ -162,10 +174,37 @@ export default function App() {
     }
   }
 
-  const handleBackup = () => {
-    const backup = buildBackup(new Date().toISOString())
+  const handleBackup = async () => {
+    const backup = await buildBackup(new Date().toISOString())
+    const encrypted = backup.type === 'resume-builder-backup-encrypted'
     downloadFile('Resume Builder - Backup.json', JSON.stringify(backup, null, 2), 'application/json')
-    showToast(`Backed up ${backup.resumes.length} resume${backup.resumes.length === 1 ? '' : 's'} + library.`)
+    const n = encrypted ? getAllResumes().length : backup.resumes.length
+    showToast(`Backed up ${n} resume${n === 1 ? '' : 's'} + library${encrypted ? ' (encrypted)' : ''}.`)
+  }
+
+  // ---- Passphrase lock ----
+  const handleUnlock = async (passphrase: string): Promise<boolean> => {
+    const ok = await vault.unlockVault(passphrase)
+    if (!ok) return false
+    await hydrateSecure()
+    setLocked(false)
+    return true
+  }
+
+  const handleSetupLock = async (passphrase: string) => {
+    await vault.setupVault(passphrase)
+    await migratePlaintextToEncrypted()
+    setShowSetup(false)
+    setLocked(false)
+    showToast('Lock enabled — your data is now encrypted.')
+  }
+
+  const handleLockNow = async () => {
+    await lockSecure()
+    bootstrapped.current = false
+    setSelectedId(null)
+    setSidebarOpen(false)
+    setLocked(true)
   }
 
   const handlePrint = () => {
@@ -237,6 +276,15 @@ export default function App() {
               Backup all
             </button>
           </div>
+          {vault.isConfigured() ? (
+            <button className="ghost-btn lock-toggle" onClick={handleLockNow}>
+              🔒 Lock now
+            </button>
+          ) : (
+            <button className="ghost-btn lock-toggle" onClick={() => setShowSetup(true)}>
+              🔒 Set up passphrase lock
+            </button>
+          )}
         </div>
       </aside>
 
@@ -287,6 +335,15 @@ export default function App() {
       />
 
       {toast && <div className="toast no-print">{toast}</div>}
+
+      {locked && <LockScreen mode="unlock" onUnlock={handleUnlock} />}
+      {showSetup && (
+        <LockScreen
+          mode="setup"
+          onSetup={handleSetupLock}
+          onCancelSetup={() => setShowSetup(false)}
+        />
+      )}
     </div>
   )
 }
