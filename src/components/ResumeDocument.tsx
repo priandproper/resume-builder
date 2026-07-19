@@ -85,6 +85,33 @@ function EntryControls({
   )
 }
 
+/** Editable "start – end" range. The dash shows only when BOTH dates exist, so
+ *  a single date (e.g. a graduation date) prints cleanly with no stray dash,
+ *  and an entry with no dates prints nothing. */
+function EditableDateRange({
+  start,
+  end,
+  onStart,
+  onEnd,
+}: {
+  start: string
+  end: string
+  onStart: (v: string) => void
+  onEnd: (v: string) => void
+}) {
+  return (
+    <span className="rt-dates">
+      <EditableText
+        value={start}
+        placeholder={end && !start ? '' : 'Start'}
+        onChange={onStart}
+      />
+      {start && end ? <span className="rt-dash"> – </span> : null}
+      <EditableText value={end} placeholder="End" onChange={onEnd} />
+    </span>
+  )
+}
+
 export function ResumeDocument({
   resume,
   onChange,
@@ -189,11 +216,12 @@ export function ResumeDocument({
                 <EditableText className="rt-entry-org" value={exp.company} placeholder="Company" onChange={(v) => updateExp(i, { company: v })} />
               </div>
               <div className="rt-entry-right">
-                <span className="rt-dates">
-                  <EditableText value={exp.startDate ?? ''} placeholder="Start" onChange={(v) => updateExp(i, { startDate: v })} />
-                  <span className="rt-dash"> – </span>
-                  <EditableText value={exp.endDate ?? ''} placeholder="End" onChange={(v) => updateExp(i, { endDate: v })} />
-                </span>
+                <EditableDateRange
+                  start={exp.startDate ?? ''}
+                  end={exp.endDate ?? ''}
+                  onStart={(v) => updateExp(i, { startDate: v })}
+                  onEnd={(v) => updateExp(i, { endDate: v })}
+                />
                 <EditableText className="rt-location" value={exp.location ?? ''} placeholder="Location" onChange={(v) => updateExp(i, { location: v })} />
               </div>
             </div>
@@ -234,11 +262,12 @@ export function ResumeDocument({
                 <EditableText className="rt-entry-org" value={ed.degree} placeholder="Degree" onChange={(v) => updateEdu(i, { degree: v })} />
               </div>
               <div className="rt-entry-right">
-                <span className="rt-dates">
-                  <EditableText value={ed.startDate ?? ''} placeholder="Start" onChange={(v) => updateEdu(i, { startDate: v })} />
-                  <span className="rt-dash"> – </span>
-                  <EditableText value={ed.endDate ?? ''} placeholder="End" onChange={(v) => updateEdu(i, { endDate: v })} />
-                </span>
+                <EditableDateRange
+                  start={ed.startDate ?? ''}
+                  end={ed.endDate ?? ''}
+                  onStart={(v) => updateEdu(i, { startDate: v })}
+                  onEnd={(v) => updateEdu(i, { endDate: v })}
+                />
                 <EditableText className="rt-location" value={ed.location ?? ''} placeholder="Location" onChange={(v) => updateEdu(i, { location: v })} />
               </div>
             </div>
