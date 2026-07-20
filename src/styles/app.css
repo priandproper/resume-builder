@@ -855,3 +855,13 @@ button {
   resize: vertical;
   margin-bottom: 12px;
 }
+
+/* ---------- New-resume wizard ---------- */
+.wizard-card {
+  max-width: 560px;
+}
+
+.wizard-payload {
+  font-size: 12px;
+  min-height: 200px;
+}

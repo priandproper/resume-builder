@@ -8,7 +8,6 @@ import {
   duplicateResume,
   subscribe,
 } from './lib/storage'
-import { blankResume } from './lib/normalize'
 import { ingestResume, ingestFromUrl, listenForPostMessage } from './lib/ingest'
 import { seedIfEmpty } from './lib/seed'
 import { fitResume } from './lib/fit'
@@ -21,6 +20,7 @@ import { hydrate as hydrateSecure, lockSecure, isLocked } from './lib/securestor
 import { LockScreen } from './components/LockScreen'
 import { SetupGlobalLock } from './components/SetupGlobalLock'
 import { ResumeDocument } from './components/ResumeDocument'
+import { NewResumeWizard } from './components/NewResumeWizard'
 import { LibraryDrawer } from './components/LibraryDrawer'
 import { SheetScaler } from './components/SheetScaler'
 import { Logo } from './components/Logo'
@@ -73,6 +73,7 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null)
   const [libraryOpen, setLibraryOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false) // off-canvas resume list on mobile
+  const [wizardOpen, setWizardOpen] = useState(false) // new-resume wizard modal
   const [locked, setLocked] = useState(() => isLocked()) // vault configured but not unlocked
   const [showGlobalSetup, setShowGlobalSetup] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -143,8 +144,22 @@ export default function App() {
   }
 
   const handleNew = () => {
-    const created = upsertResume(blankResume())
-    setSelectedId(created.id)
+    setSidebarOpen(false)
+    setWizardOpen(true)
+  }
+
+  const handleWizardCreate = (data: Record<string, unknown>) => {
+    try {
+      // Same as a single-resume file import: seed the global identity from the
+      // payload's contact (first time only), then normalize + store.
+      seedIdentityIfEmpty((data as { contact?: ContactInfo }).contact)
+      const created = ingestResume(data)
+      setSelectedId(created.id)
+      setWizardOpen(false)
+      showToast('Created new resume.')
+    } catch (err) {
+      showToast(`Couldn’t create: ${err instanceof Error ? err.message : String(err)}`)
+    }
   }
 
   const handleDuplicate = () => {
@@ -352,6 +367,10 @@ export default function App() {
       />
 
       {toast && <div className="toast no-print">{toast}</div>}
+
+      {wizardOpen && (
+        <NewResumeWizard onCreate={handleWizardCreate} onClose={() => setWizardOpen(false)} />
+      )}
 
       {locked && <LockScreen mode="unlock" onUnlock={handleUnlock} />}
       {showGlobalSetup && <SetupGlobalLock onClose={() => setShowGlobalSetup(false)} />}
