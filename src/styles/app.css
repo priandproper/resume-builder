@@ -645,6 +645,14 @@ button {
   border-color: var(--accent);
 }
 
+.lib-item-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
 .lib-item.added .lib-insert {
   color: #16a34a;
   border-color: #bbf7d0;

@@ -35,12 +35,21 @@ export interface SkillSet {
   groups: SkillGroup[]
 }
 
+export interface LibraryProject {
+  id: string
+  name: string
+  link?: string
+  description?: string
+  highlights: string[]
+}
+
 export interface Library {
   contact: ContactInfo
   education: EducationItem[]
   experiences: LibraryExperience[]
   summaries: string[]
   skillSets: SkillSet[]
+  projects: LibraryProject[]
 }
 
 const STORAGE_KEY = 'resume-builder:library:v1'
@@ -84,13 +93,18 @@ export function buildSeedLibrary(): Library {
     })),
     summaries: profile.summaries as string[],
     skillSets: profile.skillSets as SkillSet[],
+    projects: [],
   }
 }
 
 export function getLibrary(): Library {
   try {
     const raw = secureGet(STORAGE_KEY)
-    if (raw) return JSON.parse(raw) as Library
+    if (raw) {
+      const lib = JSON.parse(raw) as Library
+      if (!Array.isArray(lib.projects)) lib.projects = [] // older libraries had no projects
+      return lib
+    }
   } catch {
     /* fall through to seed */
   }
@@ -145,6 +159,28 @@ export function addSummaryToLibrary(text: string): void {
   const lib = getLibrary()
   if (lib.summaries.some((s) => s.trim().toLowerCase() === clean.toLowerCase())) return
   lib.summaries.push(clean)
+  save(lib)
+}
+
+/** Add a project to the library pool (dedupe by name). */
+export function addProjectToLibrary(project: Omit<LibraryProject, 'id'>): void {
+  const name = (project.name || '').trim()
+  if (!name) return
+  const lib = getLibrary()
+  if (lib.projects.some((p) => p.name.trim().toLowerCase() === name.toLowerCase())) return
+  lib.projects.push({
+    id: newId(),
+    name,
+    link: project.link?.trim() || undefined,
+    description: project.description?.trim() || undefined,
+    highlights: (project.highlights ?? []).map((h) => h.trim()).filter(Boolean),
+  })
+  save(lib)
+}
+
+export function removeProjectFromLibrary(id: string): void {
+  const lib = getLibrary()
+  lib.projects = lib.projects.filter((p) => p.id !== id)
   save(lib)
 }
 

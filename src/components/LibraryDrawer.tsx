@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { Resume, SkillGroup } from '../types/resume'
+import type { ProjectItem, Resume, SkillGroup } from '../types/resume'
 import {
   getLibrary,
   subscribeLibrary,
   addBulletToLibrary,
   addSummaryToLibrary,
+  addProjectToLibrary,
+  removeProjectFromLibrary,
   companyMatches,
   type LibraryExperience,
+  type LibraryProject,
 } from '../lib/library'
 
 /**
@@ -122,6 +125,22 @@ export function LibraryDrawer({
     onToast('Skill set applied')
   }
 
+  const insertProject = (p: LibraryProject) => {
+    if (!resume) return
+    if (resume.projects.some((rp) => norm(rp.name) === norm(p.name))) {
+      onToast('Already in this resume')
+      return
+    }
+    const item: ProjectItem = {
+      name: p.name,
+      link: p.link,
+      description: p.description,
+      highlights: [...p.highlights],
+    }
+    onChange({ ...resume, projects: [...resume.projects, item] })
+    onToast('Project inserted')
+  }
+
   const saveCurrentToLibrary = () => {
     if (!resume) return
     let added = 0
@@ -138,7 +157,16 @@ export function LibraryDrawer({
       })
     })
     if (resume.summary) addSummaryToLibrary(resume.summary)
-    onToast(added > 0 ? `Saved ${added} new bullet${added === 1 ? '' : 's'} to library` : 'Library already up to date')
+    // Save this resume's projects into the library pool.
+    const libProjectNames = new Set(library.projects.map((p) => norm(p.name)))
+    resume.projects.forEach((p) => {
+      if (p.name.trim() && !libProjectNames.has(norm(p.name))) {
+        addProjectToLibrary(p)
+        libProjectNames.add(norm(p.name))
+        added++
+      }
+    })
+    onToast(added > 0 ? `Saved ${added} new item${added === 1 ? '' : 's'} to library` : 'Library already up to date')
   }
 
   return (
@@ -156,7 +184,7 @@ export function LibraryDrawer({
         <div className="drawer-search">
           <input
             className="fld-input"
-            placeholder="Search bullets & summaries…"
+            placeholder="Search bullets, projects & summaries…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             autoFocus
@@ -212,6 +240,48 @@ export function LibraryDrawer({
               </section>
             )
           })}
+
+          {/* Projects */}
+          {library.projects.length > 0 &&
+            (() => {
+              const shown = library.projects.filter(
+                (p) =>
+                  matches(p.name) || matches(p.description ?? '') || p.highlights.some(matches),
+              )
+              if (shown.length === 0) return null
+              return (
+                <section className="lib-section">
+                  <h4 className="lib-heading">Projects</h4>
+                  {shown.map((p) => {
+                    const added = !!resume?.projects.some((rp) => norm(rp.name) === norm(p.name))
+                    return (
+                      <div className={`lib-item ${added ? 'added' : ''}`} key={p.id}>
+                        <div className="lib-text">
+                          <strong>{p.name}</strong>
+                          {p.description && <div className="lib-skill-preview">{p.description}</div>}
+                        </div>
+                        <div className="lib-item-actions">
+                          <button
+                            className="lib-insert"
+                            onClick={() => insertProject(p)}
+                            title={added ? 'Already in this resume' : 'Insert into resume'}
+                          >
+                            {added ? '✓' : '+'}
+                          </button>
+                          <button
+                            className="icon-btn danger"
+                            onClick={() => removeProjectFromLibrary(p.id)}
+                            title="Remove from library"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </section>
+              )
+            })()}
 
           {/* Skill sets */}
           {!q && library.skillSets.length > 0 && (
