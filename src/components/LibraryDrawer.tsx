@@ -36,11 +36,15 @@ export function LibraryDrawer({
   onChange: (next: Resume) => void
   onToast: (msg: string) => void
 }) {
-  const [, force] = useState(0)
+  const [tick, force] = useState(0)
   useEffect(() => subscribeLibrary(() => force((n) => n + 1)), [])
   const [query, setQuery] = useState('')
+  const [addingProject, setAddingProject] = useState(false)
+  const [projectDraft, setProjectDraft] = useState('')
 
-  const library = useMemo(() => getLibrary(), [open, query])
+  // `tick` bumps whenever the library changes (add/remove), so the snapshot
+  // recomputes and the drawer reflects edits made from within it.
+  const library = useMemo(() => getLibrary(), [open, query, tick])
 
   // Text of every bullet already in the current resume (for "already added" ticks).
   const currentBulletSet = useMemo(() => {
@@ -139,6 +143,34 @@ export function LibraryDrawer({
     }
     onChange({ ...resume, projects: [...resume.projects, item] })
     onToast('Project inserted')
+  }
+
+  const submitNewProject = () => {
+    const text = projectDraft.trim()
+    if (!text) return
+    let obj: Record<string, unknown>
+    try {
+      obj = JSON.parse(text) as Record<string, unknown>
+    } catch {
+      onToast('That isn’t valid JSON')
+      return
+    }
+    const name = typeof obj.name === 'string' ? obj.name.trim() : ''
+    if (!name) {
+      onToast('Project needs a "name"')
+      return
+    }
+    addProjectToLibrary({
+      name,
+      link: typeof obj.link === 'string' ? obj.link : undefined,
+      description: typeof obj.description === 'string' ? obj.description : undefined,
+      highlights: Array.isArray(obj.highlights)
+        ? obj.highlights.filter((h): h is string => typeof h === 'string')
+        : [],
+    })
+    setProjectDraft('')
+    setAddingProject(false)
+    onToast(`Added “${name}” to library`)
   }
 
   const saveCurrentToLibrary = () => {
@@ -242,46 +274,64 @@ export function LibraryDrawer({
           })}
 
           {/* Projects */}
-          {library.projects.length > 0 &&
-            (() => {
+          <section className="lib-section">
+            <div className="lib-exp-head">
+              <h4 className="lib-heading">Projects</h4>
+              <button className="lib-role-btn" onClick={() => setAddingProject((v) => !v)}>
+                {addingProject ? 'Cancel' : '+ Add'}
+              </button>
+            </div>
+            {addingProject && (
+              <div className="lib-add-project">
+                <textarea
+                  className="fld-input"
+                  rows={7}
+                  placeholder={
+                    'Paste project JSON, e.g.\n{\n  "name": "…",\n  "description": "…",\n  "highlights": ["…", "…"]\n}'
+                  }
+                  value={projectDraft}
+                  onChange={(e) => setProjectDraft(e.target.value)}
+                  autoFocus
+                />
+                <button className="ghost-btn" onClick={submitNewProject}>
+                  Add to library
+                </button>
+              </div>
+            )}
+            {(() => {
               const shown = library.projects.filter(
                 (p) =>
                   matches(p.name) || matches(p.description ?? '') || p.highlights.some(matches),
               )
-              if (shown.length === 0) return null
-              return (
-                <section className="lib-section">
-                  <h4 className="lib-heading">Projects</h4>
-                  {shown.map((p) => {
-                    const added = !!resume?.projects.some((rp) => norm(rp.name) === norm(p.name))
-                    return (
-                      <div className={`lib-item ${added ? 'added' : ''}`} key={p.id}>
-                        <div className="lib-text">
-                          <strong>{p.name}</strong>
-                          {p.description && <div className="lib-skill-preview">{p.description}</div>}
-                        </div>
-                        <div className="lib-item-actions">
-                          <button
-                            className="lib-insert"
-                            onClick={() => insertProject(p)}
-                            title={added ? 'Already in this resume' : 'Insert into resume'}
-                          >
-                            {added ? '✓' : '+'}
-                          </button>
-                          <button
-                            className="icon-btn danger"
-                            onClick={() => removeProjectFromLibrary(p.id)}
-                            title="Remove from library"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </section>
-              )
+              return shown.map((p) => {
+                const added = !!resume?.projects.some((rp) => norm(rp.name) === norm(p.name))
+                return (
+                  <div className={`lib-item ${added ? 'added' : ''}`} key={p.id}>
+                    <div className="lib-text">
+                      <strong>{p.name}</strong>
+                      {p.description && <div className="lib-skill-preview">{p.description}</div>}
+                    </div>
+                    <div className="lib-item-actions">
+                      <button
+                        className="lib-insert"
+                        onClick={() => insertProject(p)}
+                        title={added ? 'Already in this resume' : 'Insert into resume'}
+                      >
+                        {added ? '✓' : '+'}
+                      </button>
+                      <button
+                        className="icon-btn danger"
+                        onClick={() => removeProjectFromLibrary(p.id)}
+                        title="Remove from library"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                )
+              })
             })()}
+          </section>
 
           {/* Skill sets */}
           {!q && library.skillSets.length > 0 && (
