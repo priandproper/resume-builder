@@ -153,7 +153,10 @@ export default function App() {
       // Same as a single-resume file import: seed the global identity from the
       // payload's contact (first time only), then normalize + store.
       seedIdentityIfEmpty((data as { contact?: ContactInfo }).contact)
-      const created = ingestResume(data)
+      // "New resume" always creates a fresh resume. Drop any id carried in the
+      // pasted payload (Export JSON includes one) so it never overwrites an
+      // existing resume that shares that id.
+      const created = ingestResume({ ...data, id: undefined })
       setSelectedId(created.id)
       setWizardOpen(false)
       showToast('Created new resume.')
@@ -200,7 +203,9 @@ export default function App() {
         // Single resume: contact comes from the global identity, not the file —
         // but seed the identity from the file the first time if it's still empty.
         seedIdentityIfEmpty((data as { contact?: ContactInfo }).contact)
-        const stored = ingestResume(data)
+        // Import creates a new resume — drop any id in the file so it doesn't
+        // overwrite an existing resume that happens to share that id.
+        const stored = ingestResume({ ...data, id: undefined })
         setSelectedId(stored.id)
         showToast('Imported resume from file.')
       }
